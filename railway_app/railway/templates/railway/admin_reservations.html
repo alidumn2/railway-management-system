@@ -1,0 +1,108 @@
+{% extends 'railway/base.html' %}
+{% block title %}Manage Reservations{% endblock %}
+
+{% block content %}
+<div class="container fade-in">
+    <div class="page-header">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1>🎫 Reservation Management</h1>
+                <p>View and manage all ticket reservations</p>
+            </div>
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-3 mb-3">
+        <div class="card stat-card">
+            <div class="stat-icon green">✅</div>
+            <div class="stat-info">
+                <h3>{{ paid_count }}</h3>
+                <p>Paid</p>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-icon orange">⏳</div>
+            <div class="stat-info">
+                <h3>{{ pending_count }}</h3>
+                <p>Pending</p>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-icon purple">❌</div>
+            <div class="stat-info">
+                <h3>{{ canceled_count }}</h3>
+                <p>Canceled</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reservations Table -->
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Passenger</th>
+                        <th>Train</th>
+                        <th>Route</th>
+                        <th>Date</th>
+                        <th>Seat</th>
+                        <th>Coach</th>
+                        <th>Price</th>
+                        <th>Payment</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in reservations %}
+                    <tr>
+                        <td><strong>#{{ r.reservationid }}</strong></td>
+                        <td>{{ r.passengerid.firstname }} {{ r.passengerid.lastname }}</td>
+                        <td>{{ r.trainid.trainname }}</td>
+                        <td style="font-size: 0.8rem;">{{ r.fromstationid.stationname }} → {{ r.tostationid.stationname
+                            }}</td>
+                        <td>{{ r.traveldate }}</td>
+                        <td>{{ r.seatnumber }}</td>
+                        <td><span class="badge badge-info">{{ r.coachtype }}</span></td>
+                        <td>${{ r.ticketprice }}</td>
+                        <td>
+                            {% if r.paymentstatus == 'Paid' %}
+                            <span class="badge badge-success">Paid</span>
+                            {% elif r.paymentstatus == 'Pending' %}
+                            <span class="badge badge-warning">Pending</span>
+                            {% else %}
+                            <span class="badge badge-danger">{{ r.paymentstatus }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if r.paymentstatus != 'Canceled' %}
+                            <form method="POST" action="{% url 'admin_cancel_reservation' r.reservationid %}"
+                                style="display:inline;"
+                                onsubmit="return confirm('Cancel reservation #{{ r.reservationid }}?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm">Cancel</button>
+                            </form>
+                            {% endif %}
+                            <form method="POST" action="{% url 'admin_delete_reservation' r.reservationid %}"
+                                style="display:inline;"
+                                onsubmit="return confirm('Permanently delete reservation #{{ r.reservationid }}?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-sm">🗑</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center text-muted" style="padding: 2rem;">No reservations found
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

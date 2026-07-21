@@ -1,0 +1,64 @@
+{% extends 'railway/base.html' %}
+{% block title %}Manage Passengers{% endblock %}
+
+{% block content %}
+<div class="container fade-in">
+    <div class="page-header">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1>👥 Passenger Management</h1>
+                <p>View and manage all registered passengers</p>
+            </div>
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+        </div>
+    </div>
+
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Total Miles</th>
+                        <th>Loyalty Tier</th>
+                        <th>Reservations</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in passengers %}
+                    <tr>
+                        <td><strong>#{{ p.passengerid }}</strong></td>
+                        <td>{{ p.firstname }} {{ p.lastname }}</td>
+                        <td style="color: var(--accent);">{{ p.email }}</td>
+                        <td>{{ p.totalmiles|default:0 }}</td>
+                        <td>
+                            {% if p.classid %}
+                            <span class="badge badge-success">{{ p.classid.classname }}</span>
+                            {% else %}
+                            <span class="badge badge-info">Standard</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ p.reservation_count }}</td>
+                        <td>
+                            <form method="POST" action="{% url 'admin_delete_passenger' p.passengerid %}"
+                                style="display:inline;"
+                                onsubmit="return confirm('Are you sure you want to delete this passenger?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm">🗑 Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted" style="padding: 2rem;">No passengers found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

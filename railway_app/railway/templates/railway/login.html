@@ -1,0 +1,45 @@
+{% extends 'railway/base.html' %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card fade-in">
+        <div class="text-center mb-3">
+            <span style="font-size: 2.5rem;">🔐</span>
+        </div>
+        <h2>Welcome Back</h2>
+        <p class="auth-subtitle">Sign in to your account to continue</p>
+
+        {% if form.errors %}
+        <div class="alert alert-error">
+            ⚠️ Invalid username or password. Please try again.
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{% url 'login' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="id_username">Username</label>
+                <input type="text" name="username" id="id_username" class="form-control"
+                    placeholder="Enter your username" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="id_password">Password</label>
+                <input type="password" name="password" id="id_password" class="form-control"
+                    placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block btn-lg mt-2">Sign In</button>
+        </form>
+
+        <div class="auth-divider">or</div>
+
+        <div class="auth-footer">
+            Don't have an account? <a href="{% url 'register' %}">Create one →</a>
+        </div>
+        <div class="auth-footer mt-1">
+            <a href="{% url 'register_admin' %}" style="color: var(--text-muted); font-size: 0.8rem;">Staff/Admin
+                Registration →</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

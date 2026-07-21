@@ -1,0 +1,62 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Railway Corridor{% endblock %} — Saudi-Türkiye Railway</title>
+    <meta name="description" content="Saudi-Türkiye Railway Corridor — Book tickets, manage reservations, and explore international train routes.">
+    <link rel="stylesheet" href="{% static 'railway/css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <a href="{% url 'search_trains' %}" class="navbar-brand">
+            <span class="logo-icon">🚄</span>
+            <span>RailCorridor</span>
+        </a>
+
+        <ul class="navbar-links">
+            <li><a href="{% url 'search_trains' %}" class="{% if request.resolver_match.url_name == 'search_trains' %}active{% endif %}">🔍 Search Trains</a></li>
+            {% if user.is_authenticated %}
+                {% if user.is_staff %}
+                    <li><a href="{% url 'admin_dashboard' %}" class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">📊 Admin Panel</a></li>
+                {% endif %}
+                <li><a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">📋 My Dashboard</a></li>
+            {% endif %}
+        </ul>
+
+        <div class="navbar-actions">
+            {% if user.is_authenticated %}
+                <span style="color: var(--text-secondary); font-size: 0.85rem; margin-right: 8px;">👤 {{ user.username }}</span>
+                <a href="{% url 'logout' %}" class="btn btn-secondary btn-sm">Logout</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-secondary btn-sm">Login</a>
+                <a href="{% url 'register' %}" class="btn btn-primary btn-sm">Register</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="container" style="padding-bottom: 0;">
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% else %}alert-info{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Content -->
+    {% block content %}{% endblock %}
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>© 2026 Saudi-Türkiye Railway Corridor Management System. All rights reserved.</p>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

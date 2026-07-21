@@ -1,0 +1,115 @@
+{% extends 'railway/base.html' %}
+{% block title %}Manage Trains{% endblock %}
+
+{% block content %}
+<div class="container fade-in">
+    <div class="page-header">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1>🚆 Train Management</h1>
+                <p>Add, edit, and remove trains from the fleet</p>
+            </div>
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+        </div>
+    </div>
+
+    <!-- Add Train Form -->
+    <div class="card mb-3">
+        <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1rem;">➕ Add New Train</h3>
+        <form method="POST" action="{% url 'admin_add_train' %}">
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="train_id">Train ID</label>
+                    <input type="text" name="train_id" id="train_id" class="form-control" placeholder="TRN-XXXX"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label for="train_name">Train Name</label>
+                    <input type="text" name="train_name" id="train_name" class="form-control" placeholder="Express Name"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label for="train_type">Type</label>
+                    <select name="train_type" id="train_type" class="form-control">
+                        <option value="Passenger">Passenger</option>
+                        <option value="Freight">Freight</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="max_pax_speed">Passenger Speed (km/h)</label>
+                    <input type="number" name="max_pax_speed" id="max_pax_speed" class="form-control" value="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="max_freight_speed">Freight Speed (km/h)</label>
+                    <input type="number" name="max_freight_speed" id="max_freight_speed" class="form-control" value="0"
+                        min="0">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary mt-1">Add Train</button>
+        </form>
+    </div>
+
+    <!-- Train List -->
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Train ID</th>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Pax Speed</th>
+                        <th>Freight Speed</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in trains %}
+                    <tr id="train-row-{{ t.trainid }}">
+                        <td><strong>{{ t.trainid }}</strong></td>
+                        <td>
+                            <form method="POST" action="{% url 'admin_edit_train' t.trainid %}" style="display:inline;"
+                                class="inline-edit">
+                                {% csrf_token %}
+                                <input type="text" name="train_name" value="{{ t.trainname }}" class="form-control"
+                                    style="width: 180px; display:inline-block; padding:6px 10px; font-size:0.85rem;">
+                        </td>
+                        <td>
+                            {% if t.traintype == 'Passenger' %}
+                            <span class="badge badge-info">Passenger</span>
+                            {% else %}
+                            <span class="badge badge-primary">Freight</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <input type="number" name="max_pax_speed" value="{{ t.maxpassengerspeed|default:0 }}"
+                                class="form-control"
+                                style="width: 80px; display:inline-block; padding:6px 10px; font-size:0.85rem;" min="0">
+                        </td>
+                        <td>
+                            <input type="number" name="max_freight_speed" value="{{ t.maxfreightspeed|default:0 }}"
+                                class="form-control"
+                                style="width: 80px; display:inline-block; padding:6px 10px; font-size:0.85rem;" min="0">
+                        </td>
+                        <td>
+                            <button type="submit" class="btn btn-primary btn-sm">💾 Save</button>
+                            </form>
+                            <form method="POST" action="{% url 'admin_delete_train' t.trainid %}"
+                                style="display:inline;" onsubmit="return confirm('Delete train {{ t.trainname }}?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm">🗑</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted" style="padding: 2rem;">No trains found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

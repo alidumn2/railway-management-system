@@ -1,0 +1,109 @@
+{% extends 'railway/base.html' %}
+{% block title %}My Dashboard{% endblock %}
+
+{% block content %}
+<div class="container fade-in">
+    <!-- Welcome Banner -->
+    <div class="welcome-banner">
+        <h2>👋 Welcome, {{ user.first_name|default:user.username }}!</h2>
+        <p>Manage your reservations and travel from your personal dashboard.</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-4 mb-3">
+        <div class="card stat-card">
+            <div class="stat-icon blue">🎫</div>
+            <div class="stat-info">
+                <h3>{{ total_reservations }}</h3>
+                <p>Total Reservations</p>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-icon green">✅</div>
+            <div class="stat-info">
+                <h3>{{ active_reservations }}</h3>
+                <p>Active Bookings</p>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-icon purple">🏅</div>
+            <div class="stat-info">
+                <h3>{{ loyalty_class|default:"—" }}</h3>
+                <p>Loyalty Tier</p>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-icon orange">📍</div>
+            <div class="stat-info">
+                <h3>{{ total_miles|default:"0" }}</h3>
+                <p>Total Miles</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="flex items-center justify-between mb-2">
+        <h2 style="font-size: 1.25rem; font-weight: 700;">My Reservations</h2>
+        <a href="{% url 'search_trains' %}" class="btn btn-primary btn-sm">+ Book New Trip</a>
+    </div>
+
+    <!-- Reservations Table -->
+    {% if reservations %}
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Train</th>
+                        <th>From → To</th>
+                        <th>Date</th>
+                        <th>Seat</th>
+                        <th>Price</th>
+                        <th>Payment</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in reservations %}
+                    <tr>
+                        <td><strong>#{{ r.reservationid }}</strong></td>
+                        <td>{{ r.trainid.trainname }}</td>
+                        <td>{{ r.fromstationid.stationname }} → {{ r.tostationid.stationname }}</td>
+                        <td>{{ r.traveldate }}</td>
+                        <td>{{ r.seatnumber }}</td>
+                        <td>${{ r.ticketprice }}</td>
+                        <td>
+                            {% if r.paymentstatus == 'Paid' %}
+                            <span class="badge badge-success">Paid</span>
+                            {% elif r.paymentstatus == 'Pending' %}
+                            <span class="badge badge-warning">Pending</span>
+                            {% else %}
+                            <span class="badge badge-danger">{{ r.paymentstatus }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if r.ticketstatus == 'Active' %}
+                            <span class="badge badge-info">Active</span>
+                            {% else %}
+                            <span class="badge badge-danger">{{ r.ticketstatus }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="icon">🎫</div>
+            <h3>No Reservations Yet</h3>
+            <p>Start exploring routes and book your first trip!</p>
+            <a href="{% url 'search_trains' %}" class="btn btn-primary mt-2">Search Trains</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

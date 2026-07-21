@@ -1,0 +1,187 @@
+{% extends 'railway/base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container fade-in">
+    <!-- Header -->
+    <div class="page-header">
+        <h1>📊 Admin Dashboard</h1>
+        <p>Railway system overview and management panel</p>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-4 mb-3">
+        <div class="card stat-card">
+            <div class="stat-icon blue">🚆</div>
+            <div class="stat-info">
+                <h3>{{ total_trains }}</h3>
+                <p>Total Trains</p>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-icon green">🎫</div>
+            <div class="stat-info">
+                <h3>{{ total_reservations }}</h3>
+                <p>Total Reservations</p>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-icon purple">👥</div>
+            <div class="stat-info">
+                <h3>{{ total_passengers }}</h3>
+                <p>Registered Passengers</p>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-icon orange">💰</div>
+            <div class="stat-info">
+                <h3>${{ total_revenue|floatformat:0 }}</h3>
+                <p>Total Revenue</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Management Links -->
+    <div class="grid grid-4 mb-3">
+        <a href="{% url 'admin_passengers' %}" class="card" style="text-decoration:none; text-align:center;">
+            <div style="font-size:2rem; margin-bottom:0.5rem;">👥</div>
+            <h3 style="font-size:0.95rem; font-weight:700; color:var(--text-primary);">Passengers</h3>
+            <p style="font-size:0.8rem; color:var(--text-muted);">View & Delete</p>
+        </a>
+        <a href="{% url 'admin_trains' %}" class="card" style="text-decoration:none; text-align:center;">
+            <div style="font-size:2rem; margin-bottom:0.5rem;">🚆</div>
+            <h3 style="font-size:0.95rem; font-weight:700; color:var(--text-primary);">Trains</h3>
+            <p style="font-size:0.8rem; color:var(--text-muted);">Add, Edit & Delete</p>
+        </a>
+        <a href="{% url 'admin_reservations' %}" class="card" style="text-decoration:none; text-align:center;">
+            <div style="font-size:2rem; margin-bottom:0.5rem;">🎫</div>
+            <h3 style="font-size:0.95rem; font-weight:700; color:var(--text-primary);">Reservations</h3>
+            <p style="font-size:0.8rem; color:var(--text-muted);">Manage & Cancel</p>
+        </a>
+        <a href="{% url 'admin_schedules' %}" class="card" style="text-decoration:none; text-align:center;">
+            <div style="font-size:2rem; margin-bottom:0.5rem;">📅</div>
+            <h3 style="font-size:0.95rem; font-weight:700; color:var(--text-primary);">Schedules</h3>
+            <p style="font-size:0.8rem; color:var(--text-muted);">Add & Delete Stops</p>
+        </a>
+    </div>
+
+    <div class="grid grid-2">
+        <!-- Recent Reservations -->
+        <div class="card" style="padding: 0; overflow: hidden;">
+            <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);">
+                <h3 style="font-size: 1rem; font-weight: 700;">Recent Reservations</h3>
+            </div>
+            <div class="table-container" style="border: none; border-radius: 0;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Passenger</th>
+                            <th>Train</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in recent_reservations %}
+                        <tr>
+                            <td><strong>#{{ r.reservationid }}</strong></td>
+                            <td>{{ r.passengerid.firstname }} {{ r.passengerid.lastname }}</td>
+                            <td>{{ r.trainid.trainname }}</td>
+                            <td>{{ r.traveldate }}</td>
+                            <td>
+                                {% if r.paymentstatus == 'Paid' %}
+                                <span class="badge badge-success">Paid</span>
+                                {% elif r.paymentstatus == 'Pending' %}
+                                <span class="badge badge-warning">Pending</span>
+                                {% else %}
+                                <span class="badge badge-danger">{{ r.paymentstatus }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted" style="padding: 2rem;">No reservations yet
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Train Fleet -->
+        <div class="card" style="padding: 0; overflow: hidden;">
+            <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);">
+                <h3 style="font-size: 1rem; font-weight: 700;">Train Fleet</h3>
+            </div>
+            <div class="table-container" style="border: none; border-radius: 0;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Speed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in trains %}
+                        <tr>
+                            <td><strong>{{ t.trainid }}</strong></td>
+                            <td>{{ t.trainname }}</td>
+                            <td>
+                                {% if t.traintype == 'Passenger' %}
+                                <span class="badge badge-info">Passenger</span>
+                                {% else %}
+                                <span class="badge badge-primary">Freight</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ t.maxpassengerspeed|default:"—" }} km/h</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted" style="padding: 2rem;">No trains</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Staff Overview -->
+    <div class="card mt-3" style="padding: 0; overflow: hidden;">
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);">
+            <div class="flex items-center justify-between">
+                <h3 style="font-size: 1rem; font-weight: 700;">Staff Members</h3>
+                <a href="/admin/" class="btn btn-secondary btn-sm">Open Django Admin →</a>
+            </div>
+        </div>
+        <div class="table-container" style="border: none; border-radius: 0;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Role</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in staff_members %}
+                    <tr>
+                        <td><strong>#{{ s.staffid }}</strong></td>
+                        <td>{{ s.firstname }} {{ s.lastname }}</td>
+                        <td><span class="badge badge-primary">{{ s.jobrole }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center text-muted" style="padding: 2rem;">No staff members</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

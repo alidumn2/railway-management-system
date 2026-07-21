@@ -1,0 +1,106 @@
+{% extends 'railway/base.html' %}
+{% block title %}Manage Schedules{% endblock %}
+
+{% block content %}
+<div class="container fade-in">
+    <div class="page-header">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1>📅 Schedule Management</h1>
+                <p>Manage train stop schedules and timetables</p>
+            </div>
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+        </div>
+    </div>
+
+    <!-- Add Schedule Form -->
+    <div class="card mb-3">
+        <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1rem;">➕ Add Schedule Entry</h3>
+        <form method="POST" action="{% url 'admin_add_schedule' %}">
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="train_id">Train</label>
+                    <select name="train_id" id="train_id" class="form-control" required>
+                        {% for t in trains %}
+                        <option value="{{ t.trainid }}">{{ t.trainname }} ({{ t.trainid }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="station_id">Station</label>
+                    <select name="station_id" id="station_id" class="form-control" required>
+                        {% for s in stations %}
+                        <option value="{{ s.stationid }}">{{ s.stationname }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="stop_order">Stop Order</label>
+                    <input type="number" name="stop_order" id="stop_order" class="form-control" min="1" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="arrival_time">Arrival Time</label>
+                    <input type="datetime-local" name="arrival_time" id="arrival_time" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="departure_time">Departure Time</label>
+                    <input type="datetime-local" name="departure_time" id="departure_time" class="form-control">
+                </div>
+                <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button type="submit" class="btn btn-primary">Add Stop</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Schedules grouped by Train -->
+    {% for train_id, entries in grouped_schedules.items %}
+    <div class="card mb-2" style="padding: 0; overflow: hidden;">
+        <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); background: rgba(59,130,246,0.05);">
+            <h3 style="font-size: 1rem; font-weight: 700;">🚆 {{ entries.0.trainid.trainname }} ({{ train_id }})</h3>
+        </div>
+        <div class="table-container" style="border: none; border-radius: 0;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Stop #</th>
+                        <th>Station</th>
+                        <th>Arrival</th>
+                        <th>Departure</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in entries %}
+                    <tr>
+                        <td><strong>{{ s.stoporder }}</strong></td>
+                        <td>{{ s.stationid.stationname }}</td>
+                        <td>{{ s.arrivaltime|date:"Y-m-d H:i"|default:"—" }}</td>
+                        <td>{{ s.departuretime|date:"Y-m-d H:i"|default:"—" }}</td>
+                        <td>
+                            <form method="POST" action="{% url 'admin_delete_schedule' s.scheduleid %}"
+                                style="display:inline;" onsubmit="return confirm('Delete this schedule entry?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm">🗑 Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% empty %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="icon">📅</div>
+            <h3>No Schedules Found</h3>
+            <p>Add your first schedule entry above.</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

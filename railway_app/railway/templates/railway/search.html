@@ -1,0 +1,334 @@
+{% extends 'railway/base.html' %}
+{% block title %}Search Trains{% endblock %}
+
+{% block content %}
+<div class="container fade-in">
+    <div class="page-header">
+        <h1>🔍 Search Train Schedules</h1>
+        <p>Find and book tickets across the Saudi-Türkiye Railway Corridor</p>
+    </div>
+
+    <!-- Search Form -->
+    <div class="card mb-3">
+        <form method="GET" action="{% url 'search_trains' %}">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="from_station">From Station</label>
+                    <select name="from_station" id="from_station" class="form-control">
+                        <option value="">Select departure...</option>
+                        {% for s in stations %}
+                        <option value="{{ s.stationid }}">{{ s.stationname }} ({{ s.countryid.countryname }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="to_station">To Station</label>
+                    <select name="to_station" id="to_station" class="form-control">
+                        <option value="">Select arrival...</option>
+                        {% for s in stations %}
+                        <option value="{{ s.stationid }}">{{ s.stationname }} ({{ s.countryid.countryname }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="travel_date">Travel Date</label>
+                    <input type="date" name="travel_date" id="travel_date" class="form-control"
+                        value="{{ travel_date|default:'2026-07-25' }}">
+                </div>
+                <div class="form-group" style="display: flex; align-items: flex-end; gap: 10px;">
+                    <button type="submit" class="btn btn-primary btn-lg" style="flex: 1;">Search</button>
+                    <a href="?all_trains=1" class="btn btn-secondary btn-lg" style="flex: 1; text-align: center;">Show
+                        All</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results -->
+    <!-- Results -->
+    {% if train_results %}
+    <div class="flex items-center justify-between mb-2">
+        <h2 style="font-size: 1.15rem; font-weight: 700;">Available Trains</h2>
+        <span class="text-muted" style="font-size: 0.85rem;">{{ train_results|length }} train(s) found</span>
+    </div>
+
+    <style>
+        /* Seat Selection Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background-color: var(--bg-card);
+            margin: 5% auto;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: var(--text-primary);
+        }
+
+        .train-carriage {
+            background: rgba(0, 0, 0, 0.2);
+            border: 2px solid var(--border);
+            border-radius: 50px 50px 10px 10px;
+            padding: 3rem 1.5rem 1.5rem;
+            margin-top: 1rem;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+
+        .seat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .seat {
+            width: 40px;
+            height: 45px;
+            background: #2a3042;
+            border: 1px solid #4a5568;
+            border-radius: 8px 8px 4px 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #a0aec0;
+            transition: all 0.2s;
+        }
+
+        .seat:hover {
+            background: #4a5568;
+            color: white;
+            border-color: #718096;
+        }
+
+        .seat.selected {
+            background: var(--primary);
+            color: white;
+            border-color: #60a5fa;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+        }
+
+        .seat.vip {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .seat.vip.selected {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+        }
+
+        .aisle {
+            width: 30px;
+            /* Space between A/B and C/D */
+        }
+    </style>
+
+    {% for t_data in train_results %}
+    <div class="card train-card fade-in">
+        <div class="train-header">
+            <div>
+                <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.25rem;">🚆 {{
+                    t_data.train.trainname|default:"Express Train" }}</div>
+                <span class="badge badge-info">{{ t_data.train.trainid|default:t_data.train.pk }}</span>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 1.05rem; font-weight: 700; color: var(--accent);">
+                    {% if t_data.departure_time and t_data.arrival_time %}
+                    {{ t_data.departure_time|date:"d M Y H:i" }} <br>
+                    <span style="font-size: 0.8rem; color:var(--text-muted);">to</span> {{ t_data.arrival_time|date:"d M
+                    Y H:i" }}
+                    {% else %}
+                    Travel Date: {{ travel_date|default:"Any" }}
+                    {% endif %}
+                </div>
+                <span class="train-speed" style="font-size: 0.8rem; display:block; margin-top:0.25rem;">⚡ {{
+                    t_data.train.maxpassengerspeed }} km/h</span>
+            </div>
+        </div>
+
+        <form method="POST" action="{% url 'book_seat' %}" class="booking-form"
+            style="display:flex; flex-direction:column; gap:1rem;">
+            {% csrf_token %}
+            <input type="hidden" name="train_id" value="{{ t_data.train.trainid|default:t_data.train.pk }}">
+            <input type="hidden" name="travel_date" value="{{ travel_date }}">
+            <input type="hidden" name="from_station" value="{{ from_station }}">
+            <input type="hidden" name="to_station" value="{{ to_station }}">
+
+            <!-- Hidden input to store chosen seat -->
+            <input type="hidden" name="seat_number" id="seat_input_{{ forloop.counter }}" required>
+
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(59, 130, 246, 0.05); border: 1px solid var(--border); border-radius: 8px;">
+                <div>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">Selected Seat:</span><br>
+                    <strong id="seat_display_{{ forloop.counter }}" style="font-size: 1.2rem;">None</strong>
+                </div>
+                <!-- Button to open correct modal -->
+                <button type="button" class="btn btn-secondary open-seat-modal" data-target="{{ forloop.counter }}">💺
+                    Choose Seat</button>
+            </div>
+
+            {% if user.is_authenticated %}
+            <button type="submit" class="btn btn-success" style="width: 100%;">Confirm Booking • $450.00</button>
+            {% else %}
+            <a href="{% url 'login' %}?next={% url 'search_trains' %}" class="btn btn-secondary"
+                style="width: 100%; text-align: center;">Log in to Book</a>
+            {% endif %}
+        </form>
+    </div>
+    {% endfor %}
+
+    <!-- Single Seat Map Modal referenced by JS -->
+    <div id="seatModalMaster" class="modal">
+        <div class="modal-content fade-in">
+            <span class="close-modal close">&times;</span>
+            <h2 style="font-size: 1.2rem; margin-bottom: 0.5rem; text-align:center;">Train Carriage Layout</h2>
+            <p style="text-align:center; font-size: 0.85rem; color:var(--text-muted); margin-bottom:1rem;">Tap a seat to
+                select</p>
+
+            <div class="train-carriage" id="carriageLayout">
+                <!-- Rendered safely by JS -->
+            </div>
+
+            <p style="text-align:center; margin-top: 1rem;">
+                <button type="button" class="btn btn-primary close-modal" style="width:100%;">Done</button>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const modal = document.getElementById("seatModalMaster");
+            const carriage = document.getElementById("carriageLayout");
+            let currentTargetId = null; // Store which form counter we are picking for
+
+            // Generate seats: 10 rows of 4 (40 seats)
+            const cols = ['A', 'B', 'C', 'D'];
+            let html = '';
+            html += '<div style="text-align:center; margin-bottom: 1rem; color:var(--accent); font-weight:bold; font-size:0.8rem;">FRONT (Locomotive)</div>';
+
+            for (let r = 1; r <= 10; r++) {
+                const rowStr = r < 10 ? '0' + r : r;
+                // Rows 1-2 VIP
+                const isVip = (r <= 2) ? 'vip' : '';
+
+                html += '<div class="seat-row">';
+                html += `<div class="seat ${isVip}" data-seat="A${rowStr}">A${rowStr}</div>`;
+                html += `<div class="seat ${isVip}" data-seat="B${rowStr}">B${rowStr}</div>`;
+                html += `<div class="aisle"></div>`; // Aisle
+                html += `<div class="seat ${isVip}" data-seat="C${rowStr}">C${rowStr}</div>`;
+                html += `<div class="seat ${isVip}" data-seat="D${rowStr}">D${rowStr}</div>`;
+                html += '</div>';
+            }
+            carriage.innerHTML = html;
+
+            const allSeats = document.querySelectorAll('.seat');
+
+            // Open modal
+            document.querySelectorAll('.open-seat-modal').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    currentTargetId = this.getAttribute('data-target');
+
+                    // Read current hidden input
+                    const currentSeat = document.getElementById(`seat_input_${currentTargetId}`).value;
+
+                    // Reset visual selection
+                    allSeats.forEach(s => {
+                        if (s.getAttribute('data-seat') === currentSeat) {
+                            s.classList.add('selected');
+                        } else {
+                            s.classList.remove('selected');
+                        }
+                    });
+
+                    modal.style.display = "block";
+                });
+            });
+
+            // Close modal
+            document.querySelectorAll('.close-modal').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    modal.style.display = "none";
+                });
+            });
+
+            window.onclick = function (event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+
+            // Handle seat click
+            allSeats.forEach(seat => {
+                seat.addEventListener('click', function () {
+                    // Deselect others
+                    allSeats.forEach(s => s.classList.remove('selected'));
+                    // Select this one
+                    this.classList.add('selected');
+
+                    const chosenSeat = this.getAttribute('data-seat');
+
+                    // Update form input and display
+                    if (currentTargetId) {
+                        document.getElementById(`seat_input_${currentTargetId}`).value = chosenSeat;
+                        document.getElementById(`seat_display_${currentTargetId}`).innerText = chosenSeat;
+                    }
+
+                    // Auto close modal slightly after choosing
+                    setTimeout(() => {
+                        modal.style.display = "none";
+                    }, 300);
+                });
+            });
+        });
+    </script>
+
+    {% elif from_station and to_station %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="icon">🔍</div>
+            <h3>No Trains Found</h3>
+            <p>No trains available for the selected route. Try different stations or dates.</p>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="icon">🚄</div>
+            <h3>Ready to Explore?</h3>
+            <p>Select your departure and arrival stations above to find available trains.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
