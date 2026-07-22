@@ -316,6 +316,7 @@ class Train(models.Model):
     traintype = models.CharField(db_column='TrainType', max_length=50)  
     maxpassengerspeed = models.IntegerField(db_column='MaxPassengerSpeed', blank=True, null=True)  
     maxfreightspeed = models.IntegerField(db_column='MaxFreightSpeed', blank=True, null=True)  
+    seatcount = models.IntegerField(db_column='SeatCount', blank=True, null=True, default=60)
 
     class Meta:
         managed = False

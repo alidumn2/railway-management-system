@@ -45,6 +45,10 @@
                     <input type="number" name="max_freight_speed" id="max_freight_speed" class="form-control" value="0"
                         min="0">
                 </div>
+                <div class="form-group">
+                    <label for="seat_count">Seat Count</label>
+                    <input type="number" name="seat_count" id="seat_count" class="form-control" value="60" min="1">
+                </div>
             </div>
             <button type="submit" class="btn btn-primary mt-1">Add Train</button>
         </form>
@@ -59,6 +63,7 @@
                         <th>Train ID</th>
                         <th>Name</th>
                         <th>Type</th>
+                        <th>Seats</th>
                         <th>Pax Speed</th>
                         <th>Freight Speed</th>
                         <th>Actions</th>
@@ -83,6 +88,11 @@
                             {% endif %}
                         </td>
                         <td>
+                            <input type="number" name="seat_count" value="{{ t.seatcount|default:60 }}"
+                                class="form-control"
+                                style="width: 80px; display:inline-block; padding:6px 10px; font-size:0.85rem;" min="1">
+                        </td>
+                        <td>
                             <input type="number" name="max_pax_speed" value="{{ t.maxpassengerspeed|default:0 }}"
                                 class="form-control"
                                 style="width: 80px; display:inline-block; padding:6px 10px; font-size:0.85rem;" min="0">
@@ -104,7 +114,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted" style="padding: 2rem;">No trains found</td>
+                        <td colspan="7" class="text-center text-muted" style="padding: 2rem;">No trains found</td>
                     </tr>
                     {% endfor %}
                 </tbody>

@@ -154,32 +154,46 @@
     </style>
 
     {% for t_data in train_results %}
+    {% with train=t_data.train dep=t_data.departure_time arr=t_data.arrival_time %}
+    {% with from_stn=t_data.from_station_name to_stn=t_data.to_station_name %}
     <div class="card train-card fade-in">
         <div class="train-header">
             <div>
-                <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.25rem;">🚆 {{
-                    t_data.train.trainname|default:"Express Train" }}</div>
-                <span class="badge badge-info">{{ t_data.train.trainid|default:t_data.train.pk }}</span>
+                <div style="font-weight:700;font-size:1.1rem;margin-bottom:0.25rem;">
+                    🚆 {{ train.trainname }}
+                </div>
+                <span class="badge badge-info">{{ train.trainid }}</span>
+                {% if from_stn and to_stn %}
+                <div style="margin-top:0.5rem;font-size:0.9rem;color:var(--text-muted);">
+                    📍 {{ from_stn }} → {{ to_stn }}
+                </div>
+                {% endif %}
             </div>
-            <div style="text-align: right;">
-                <div style="font-size: 1.05rem; font-weight: 700; color: var(--accent);">
-                    {% if t_data.departure_time and t_data.arrival_time %}
-                    {{ t_data.departure_time|date:"d M Y H:i" }} <br>
-                    <span style="font-size: 0.8rem; color:var(--text-muted);">to</span> {{ t_data.arrival_time|date:"d M
-                    Y H:i" }}
-                    {% else %}
-                    Travel Date: {{ travel_date|default:"Any" }}
+            <div style="text-align:right;">
+                <div style="font-size:1.05rem;font-weight:700;color:var(--accent);">
+                    {% if dep %}
+                    🕐 {{ dep|date:"d M Y H:i" }}
+                    {% endif %}
+                    {% if dep and arr %}
+                    <br><span style="font-size:0.8rem;color:var(--text-muted);">→</span>
+                    {{ arr|date:"d M Y H:i" }}
+                    {% elif arr %}
+                    🕐 {{ arr|date:"d M Y H:i" }}
+                    {% endif %}
+                    {% if not dep and not arr %}
+                    <span style="color:var(--text-muted);font-size:0.85rem;">No schedule set</span>
                     {% endif %}
                 </div>
-                <span class="train-speed" style="font-size: 0.8rem; display:block; margin-top:0.25rem;">⚡ {{
-                    t_data.train.maxpassengerspeed }} km/h</span>
+                <span class="train-speed" style="font-size:0.8rem;display:block;margin-top:0.25rem;">
+                    ⚡ {{ train.maxpassengerspeed }} km/h
+                </span>
             </div>
         </div>
 
         <form method="POST" action="{% url 'book_seat' %}" class="booking-form"
             style="display:flex; flex-direction:column; gap:1rem;">
             {% csrf_token %}
-            <input type="hidden" name="train_id" value="{{ t_data.train.trainid|default:t_data.train.pk }}">
+            <input type="hidden" name="train_id" value="{{ train.trainid }}">
             <input type="hidden" name="travel_date" value="{{ travel_date }}">
             <input type="hidden" name="from_station" value="{{ from_station }}">
             <input type="hidden" name="to_station" value="{{ to_station }}">
@@ -194,8 +208,8 @@
                     <strong id="seat_display_{{ forloop.counter }}" style="font-size: 1.2rem;">None</strong>
                 </div>
                 <!-- Button to open correct modal -->
-                <button type="button" class="btn btn-secondary open-seat-modal" data-target="{{ forloop.counter }}">💺
-                    Choose Seat</button>
+                <button type="button" class="btn btn-secondary open-seat-modal" data-target="{{ forloop.counter }}"
+                    data-seats="{{ train.seatcount|default:60 }}">💺 Choose Seat</button>
             </div>
 
             {% if user.is_authenticated %}
@@ -206,6 +220,8 @@
             {% endif %}
         </form>
     </div>
+    {% endwith %}
+    {% endwith %}
     {% endfor %}
 
     <!-- Single Seat Map Modal referenced by JS -->
@@ -232,32 +248,44 @@
             const carriage = document.getElementById("carriageLayout");
             let currentTargetId = null; // Store which form counter we are picking for
 
-            // Generate seats: 10 rows of 4 (40 seats)
-            const cols = ['A', 'B', 'C', 'D'];
-            let html = '';
-            html += '<div style="text-align:center; margin-bottom: 1rem; color:var(--accent); font-weight:bold; font-size:0.8rem;">FRONT (Locomotive)</div>';
+            // Generate seats dynamically based on train's seat count
+            function renderSeats(totalSeats) {
+                const seatsPerRow = 4;
+                const numRows = Math.ceil(totalSeats / seatsPerRow);
+                let html = '';
+                html += '<div style="text-align:center; margin-bottom: 1rem; color:var(--accent); font-weight:bold; font-size:0.8rem;">FRONT (Locomotive)</div>';
 
-            for (let r = 1; r <= 10; r++) {
-                const rowStr = r < 10 ? '0' + r : r;
-                // Rows 1-2 VIP
-                const isVip = (r <= 2) ? 'vip' : '';
+                let seatNum = 0;
+                for (let r = 1; r <= numRows; r++) {
+                    const rowStr = r < 10 ? '0' + r : r;
+                    const isVip = (r <= 2) ? 'vip' : '';
 
-                html += '<div class="seat-row">';
-                html += `<div class="seat ${isVip}" data-seat="A${rowStr}">A${rowStr}</div>`;
-                html += `<div class="seat ${isVip}" data-seat="B${rowStr}">B${rowStr}</div>`;
-                html += `<div class="aisle"></div>`; // Aisle
-                html += `<div class="seat ${isVip}" data-seat="C${rowStr}">C${rowStr}</div>`;
-                html += `<div class="seat ${isVip}" data-seat="D${rowStr}">D${rowStr}</div>`;
-                html += '</div>';
+                    html += '<div class="seat-row">';
+                    const colLabels = ['A', 'B', 'C', 'D'];
+                    for (let c = 0; c < 4; c++) {
+                        seatNum++;
+                        if (seatNum <= totalSeats) {
+                            html += `<div class="seat ${isVip}" data-seat="${colLabels[c]}${rowStr}">${colLabels[c]}${rowStr}</div>`;
+                        } else {
+                            html += '<div style="width:40px;"></div>'; // empty placeholder
+                        }
+                        if (c === 1) html += '<div class="aisle"></div>'; // Aisle after B
+                    }
+                    html += '</div>';
+                }
+                carriage.innerHTML = html;
             }
-            carriage.innerHTML = html;
-
-            const allSeats = document.querySelectorAll('.seat');
 
             // Open modal
             document.querySelectorAll('.open-seat-modal').forEach(btn => {
                 btn.addEventListener('click', function () {
                     currentTargetId = this.getAttribute('data-target');
+                    const totalSeats = parseInt(this.getAttribute('data-seats')) || 60;
+
+                    // Render seats based on this train's count
+                    renderSeats(totalSeats);
+
+                    const allSeats = document.querySelectorAll('.seat');
 
                     // Read current hidden input
                     const currentSeat = document.getElementById(`seat_input_${currentTargetId}`).value;

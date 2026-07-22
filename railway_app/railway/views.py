@@ -209,6 +209,7 @@ def admin_add_train(request):
         train_type = request.POST.get('train_type', 'Passenger')
         max_pax = int(request.POST.get('max_pax_speed', 0))
         max_freight = int(request.POST.get('max_freight_speed', 0))
+        seat_count = int(request.POST.get('seat_count', 60))
         
         if Train.objects.filter(trainid=train_id).exists():
             messages.error(request, f"Train ID '{train_id}' already exists!")
@@ -218,7 +219,8 @@ def admin_add_train(request):
                 trainname=train_name,
                 traintype=train_type,
                 maxpassengerspeed=max_pax,
-                maxfreightspeed=max_freight
+                maxfreightspeed=max_freight,
+                seatcount=seat_count
             )
             messages.success(request, f"Train '{train_name}' added successfully!")
     return redirect('admin_trains')
@@ -231,6 +233,7 @@ def admin_edit_train(request, train_id):
         train.trainname = request.POST.get('train_name', train.trainname)
         train.maxpassengerspeed = int(request.POST.get('max_pax_speed', 0))
         train.maxfreightspeed = int(request.POST.get('max_freight_speed', 0))
+        train.seatcount = int(request.POST.get('seat_count', 60))
         train.save()
         messages.success(request, f"Train '{train.trainname}' updated!")
     return redirect('admin_trains')
@@ -353,21 +356,33 @@ def search_trains(request):
     to_station = request.GET.get('to_station')
     travel_date = request.GET.get('travel_date')
     all_trains = request.GET.get('all_trains')
+    from_station_name = ''
+    to_station_name = ''
     
     if all_trains == '1':
-        # Only show trains that have at least one stop defined in the schedule
-        train_ids_with_schedules = Trainschedule.objects.values_list('trainid_id', flat=True).distinct()
-        trains = Train.objects.filter(trainid__in=train_ids_with_schedules, traintype='Passenger')
+        # Show all passenger trains with route info from schedule
+        trains = Train.objects.filter(traintype='Passenger')
         for t in trains:
+            stops = Trainschedule.objects.filter(trainid=t).select_related('stationid').order_by('stoporder')
+            first_stop = stops.first()
+            last_stop = stops.last()
             train_results.append({
                 'train': t,
-                'departure_time': None,
-                'arrival_time': None
+                'from_station_name': first_stop.stationid.stationname if first_stop else 'N/A',
+                'to_station_name': last_stop.stationid.stationname if last_stop and last_stop != first_stop else 'N/A',
+                'departure_time': first_stop.departuretime if first_stop else None,
+                'arrival_time': last_stop.arrivaltime if last_stop else None,
             })
     elif from_station and to_station:
         try:
             from_st_id = int(from_station)
             to_st_id = int(to_station)
+            
+            # Get station names for display
+            from_st_obj = Station.objects.filter(stationid=from_st_id).first()
+            to_st_obj = Station.objects.filter(stationid=to_st_id).first()
+            from_station_name = from_st_obj.stationname if from_st_obj else ''
+            to_station_name = to_st_obj.stationname if to_st_obj else ''
             
             from_schedules = Trainschedule.objects.filter(stationid=from_st_id)
             to_schedules = Trainschedule.objects.filter(stationid=to_st_id)
@@ -375,7 +390,6 @@ def search_trains(request):
             valid_train_dicts = []
             
             for f_sch in from_schedules:
-                # Look for a matching 'to' schedule for the same train
                 matching_to = to_schedules.filter(trainid=f_sch.trainid_id, stoporder__gt=f_sch.stoporder).first()
                 if matching_to:
                     valid_train_dicts.append({
@@ -391,6 +405,8 @@ def search_trains(request):
                 if t_obj:
                     train_results.append({
                         'train': t_obj,
+                        'from_station_name': from_station_name,
+                        'to_station_name': to_station_name,
                         'departure_time': d['departure_time'],
                         'arrival_time': d['arrival_time']
                     })
@@ -404,7 +420,9 @@ def search_trains(request):
         'from_station': from_station,
         'to_station': to_station,
         'travel_date': travel_date,
-        'all_trains': all_trains
+        'all_trains': all_trains,
+        'from_station_name': from_station_name,
+        'to_station_name': to_station_name,
     })
 
 
